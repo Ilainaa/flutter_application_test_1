@@ -1,3 +1,9 @@
+plugins {
+    // เพิ่มบรรทัดนี้เพื่อเรียกใช้ Google Services
+    id("com.google.gms.google-services") version "4.4.4" apply false
+}
+
+// ... ส่วน allprojects อันเดิมให้มันอยู่ข้างล่างต่อจากนี้ ...
 allprojects {
     repositories {
         google()

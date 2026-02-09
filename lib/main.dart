@@ -1,36 +1,45 @@
+import 'package:firebase_auth/firebase_auth.dart'; // เพิ่มบรรทัดนี้
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'login_page.dart';
+import 'home_page.dart'; // เพิ่มบรรทัดนี้
 
-void main() {
+// ต้องเปลี่ยนเป็น async เพื่อให้รอ Firebase เชื่อมต่อเสร็จก่อนค่อยเปิดแอป
+void main() async {
+  // 1. จำเป็นต้องเรียกตัวนี้เพื่อให้ Flutter พร้อมทำงานก่อนเริ่มระบบอื่น
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. สั่งให้เชื่อมต่อกับ Firebase (ใช้ไฟล์ google-services.json ที่เราโหลดมา)
+  await Firebase.initializeApp();
+
+  // 3. พอเชื่อมเสร็จ ค่อยสั่งรันแอป
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false, // ปิดป้าย Debug มุมขวาบน
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown), // ธีมสีน้ำตาล (สไตล์ Khee/ห้องน้ำ)
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      // --- แก้จุดนี้ครับ ---
+      // ใช้ StreamBuilder คอยฟังสถานะจาก Firebase ตลอดเวลา
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // ถ้ามีข้อมูล User (แปลว่าล็อกอินอยู่) -> ส่งไปหน้า Home ทันที
+          if (snapshot.hasData) {
+            return const HomePage();
+          }
+          // ถ้าไม่มีข้อมูล (แปลว่ายังไม่ล็อกอิน หรือ Logout แล้ว) -> ส่งไปหน้า Login
+          return const LoginPage();
+        },
+      ),
     );
   }
 }

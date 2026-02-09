@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "666516219714",
+    "project_id": "hero-toilet",
+    "storage_bucket": "hero-toilet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666516219714:android:b5fb6a98e342f321344adb",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_test_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxuOVAd9g4J5NReb3TkjdxRtU19xLIy2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
