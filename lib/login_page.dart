@@ -43,6 +43,18 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> loginAsGuest() async {
+    try {
+      // สั่ง Firebase ให้สร้างไอดีชั่วคราวให้
+      await FirebaseAuth.instance.signInAnonymously();
+      // พอล็อกอินเสร็จ StreamBuilder ใน main.dart จะพาไปหน้า Home เอง
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text("เข้าสู่ระบบ Guest ล้มเหลว")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,6 +126,15 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
+
+            TextButton(
+              onPressed: loginAsGuest, // เรียกฟังก์ชัน Guest
+              child: Text(
+                "เข้าใช้งานแบบ Guest (ผู้เยี่ยมชม)", 
+                style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline),
+              ),
+            ),
+            
           ],
         ),
       ),
