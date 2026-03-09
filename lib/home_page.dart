@@ -504,6 +504,13 @@ class _HomePageState extends State<HomePage> {
                 }
                 setState(() => _myDescription = _descController.text);
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("✅ บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว!"),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 1), 
+                  ),
+                );
               },
               child: Text("บันทึก"),
             ),
