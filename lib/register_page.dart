@@ -1,10 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart'; // 1. นำเข้าแพ็กเกจ Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-// สร้างตัวแปรจำสถานะการซ่อนรหัสผ่าน (เริ่มต้นให้ซ่อนไว้ก่อน)
 bool _isObscure = true;
 
-// เปลี่ยนเป็น StatefulWidget เพื่อให้จัดการข้อมูลได้
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -13,172 +11,301 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // 2. สร้างตัวควบคุม (Controller) เพื่อดึงข้อความจากช่องกรอก
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // 3. ฟังก์ชันสมัครสมาชิก (ทำงานเมื่อกดปุ่ม)
-  // ฟังก์ชันสมัครสมาชิก (ทำงานเมื่อกดปุ่ม)
+  // ── สีธีมหลัก ──
+  static const Color _pink = Color(0xFFE91E8C);
+  static const Color _lightPink = Color(0xFFFCE4EC);
+  static const Color _softPink = Color(0xFFF8BBD0);
+  static const Color _deepPink = Color(0xFFC2185B);
+
+  void _showSnackBar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: isError ? _deepPink : _pink,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      content: Text(msg, style: const TextStyle(color: Colors.white)),
+    ));
+  }
+
   Future<void> register() async {
-    // ด่านตรวจที่ 1: เช็คว่าช่องอีเมลหรือรหัสผ่านถูกปล่อยว่างไว้หรือไม่
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน")),
-      );
-      return; // หยุดการทำงานของฟังก์ชันทันที
-    }
-
-    // ด่านตรวจที่ 2: เช็คความยาวรหัสผ่านว่าน้อยกว่า 6 ตัวอักษรหรือไม่
-    if (_passwordController.text.trim().length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร"),
-        ),
-      );
+      _showSnackBar("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน", isError: true);
       return;
     }
-
-    // ด่านตรวจที่ 3: เช็คว่ากรอกรหัสผ่านทั้งสองช่องตรงกันไหม (โค้ดเดิมของคุณ)
+    if (_passwordController.text.trim().length < 6) {
+      _showSnackBar("รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร", isError: true);
+      return;
+    }
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("รหัสผ่านไม่ตรงกัน")));
+      _showSnackBar("รหัสผ่านไม่ตรงกัน", isError: true);
       return;
     }
 
     try {
-      // 1. ส่งข้อมูลไปสร้าง user ใน Firebase
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
-      // 2. สั่งให้ส่งอีเมลยืนยันตัวตนไปที่อีเมลที่เพิ่งสมัคร
       await FirebaseAuth.instance.currentUser?.sendEmailVerification();
-
-      // 3. เตะผู้ใช้ออกจากระบบ (Sign Out) เพื่อไม่ให้แอบเข้าใช้งานก่อนกดยืนยันอีเมล
       await FirebaseAuth.instance.signOut();
-
-      // 4. แจ้งเตือนผู้ใช้ว่าสมัครสำเร็จแล้ว และปิดหน้านี้ทิ้ง
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "สมัครสำเร็จ! กรุณากดยืนยันตัวตนในอีเมล (หากไม่พบ โปรดตรวจสอบในกล่องจดหมายขยะหรือ Spam)",
-          ),
-          duration: Duration(seconds: 5), // ให้มันโชว์ค้างไว้นานขึ้นนิดนึง
-        ),
+      _showSnackBar(
+        "สมัครสำเร็จ! 🎉 กรุณายืนยันตัวตนในอีเมล (ตรวจสอบกล่อง Spam ด้วยนะคะ)",
       );
-      Navigator.pop(context); // เด้งกลับไปหน้า Login
+      Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      // ดักจับ Error เฉพาะที่มาจาก Firebase (เช่น อีเมลนี้มีคนสมัครไปแล้ว)
       String message = "เกิดข้อผิดพลาดในการสมัคร";
-      if (e.code == 'email-already-in-use') {
-        message = "อีเมลนี้มีผู้ใช้งานในระบบแล้ว";
-      } else if (e.code == 'invalid-email') {
-        message = "รูปแบบอีเมลไม่ถูกต้อง";
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      if (e.code == 'email-already-in-use') message = "อีเมลนี้มีผู้ใช้งานในระบบแล้ว";
+      else if (e.code == 'invalid-email') message = "รูปแบบอีเมลไม่ถูกต้อง";
+      _showSnackBar(message, isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("สมัครสมาชิก Hero"),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFFF0F5), Color(0xFFFCE4EC), Color(0xFFF8BBD0)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
           child: Column(
             children: [
-              Icon(Icons.person_add, size: 80, color: Colors.brown),
-              SizedBox(height: 20),
-
-              TextField(
-                controller: _emailController, // ผูกตัวควบคุม
-                decoration: InputDecoration(
-                  labelText: "อีเมล",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-              SizedBox(height: 15),
-
-              TextField(
-                controller: _passwordController, // ผูกตัวควบคุม
-                obscureText: _isObscure,
-                decoration: InputDecoration(
-                  labelText: "รหัสผ่าน",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                  // 2. เพิ่มส่วน suffixIcon (ไอคอนต่อท้าย) ตรงนี้
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      // ตรรกะ: ถ้า _isObscure เป็น true ให้โชว์ลูกตาปิด (visibility_off)
-                      // แต่ถ้าเป็น false ให้โชว์ลูกตาเปิด (visibility)
-                      _isObscure ? Icons.visibility_off : Icons.visibility,
+              // ── AppBar แบบ custom ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _softPink.withOpacity(0.5),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 18, color: _deepPink),
+                      ),
                     ),
-                    onPressed: () {
-                      // 3. ใช้ setState เพื่อสั่งให้หน้าจอกะพริบวาดใหม่
-                      setState(() {
-                        // สลับค่าตัวแปร: เครื่องหมาย ! แปลว่า "ตรงข้าม"
-                        _isObscure = !_isObscure;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(height: 15),
-
-              TextField(
-                controller: _confirmPasswordController, // ผูกตัวควบคุม
-                obscureText: _isObscure,
-                decoration: InputDecoration(
-                  labelText: "ยืนยันรหัสผ่าน",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_outline),
-                  // 2. เพิ่มส่วน suffixIcon (ไอคอนต่อท้าย) ตรงนี้
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      // ตรรกะ: ถ้า _isObscure เป็น true ให้โชว์ลูกตาปิด (visibility_off)
-                      // แต่ถ้าเป็น false ให้โชว์ลูกตาเปิด (visibility)
-                      _isObscure ? Icons.visibility_off : Icons.visibility,
+                    const SizedBox(width: 14),
+                    const Text(
+                      "สมัครสมาชิก",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: _deepPink,
+                      ),
                     ),
-                    onPressed: () {
-                      // 3. ใช้ setState เพื่อสั่งให้หน้าจอกะพริบวาดใหม่
-                      setState(() {
-                        // สลับค่าตัวแปร: เครื่องหมาย ! แปลว่า "ตรงข้าม"
-                        _isObscure = !_isObscure;
-                      });
-                    },
-                  ),
+                  ],
                 ),
               ),
-              SizedBox(height: 30),
 
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed:
-                      register, // เรียกใช้ฟังก์ชัน register ที่เขียนไว้ข้างบน
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
-                    foregroundColor: Colors.white,
+              // ── เนื้อหา ──
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+
+                      // ── ไอคอน ──
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF80AB), _pink],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _pink.withOpacity(0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.person_add_rounded,
+                            size: 46, color: Colors.white),
+                      ),
+                      const SizedBox(height: 18),
+
+                      Text(
+                        "สร้างบัญชีใหม่",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: _deepPink,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "กรอกข้อมูลด้านล่างเพื่อเริ่มต้น",
+                        style: TextStyle(fontSize: 14, color: Colors.pink[300]),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // ── ฟอร์ม ──
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _softPink.withOpacity(0.5),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildTextField(
+                              controller: _emailController,
+                              label: "อีเมล",
+                              icon: Icons.email_rounded,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _passwordController,
+                              label: "รหัสผ่าน",
+                              icon: Icons.lock_rounded,
+                              isPassword: true,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _confirmPasswordController,
+                              label: "ยืนยันรหัสผ่าน",
+                              icon: Icons.lock_outline_rounded,
+                              isPassword: true,
+                            ),
+                            const SizedBox(height: 28),
+                            _buildPrimaryButton("ยืนยันการสมัคร", register),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── ข้อความกลับหน้า Login ──
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("มีบัญชีแล้ว?",
+                              style: TextStyle(color: Colors.pink[400])),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              "เข้าสู่ระบบ",
+                              style: TextStyle(
+                                color: _deepPink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  child: Text("ยืนยันการสมัคร", style: TextStyle(fontSize: 18)),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword ? _isObscure : false,
+      style: const TextStyle(color: Color(0xFF4A0020)),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.pink[300]),
+        prefixIcon: Icon(icon, color: _pink),
+        filled: true,
+        fillColor: _lightPink.withOpacity(0.4),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: _softPink, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _pink, width: 2),
+        ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isObscure
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  color: Colors.pink[300],
+                ),
+                onPressed: () => setState(() => _isObscure = !_isObscure),
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(String label, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_pink, _deepPink],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _pink.withOpacity(0.45),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Text(label,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
         ),
       ),
     );

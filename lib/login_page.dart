@@ -1,13 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'register_page.dart';
-import 'home_page.dart'; // อย่าลืม import หน้า Home
+import 'home_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-// สร้างตัวแปรจำสถานะการซ่อนรหัสผ่าน (เริ่มต้นให้ซ่อนไว้ก่อน)
 bool _isObscure = true;
 
-// เปลี่ยนเป็น StatefulWidget
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -16,14 +14,17 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // สร้างตัวควบคุมรับค่า Text
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // ฟังก์ชัน Login
+  // ── สีธีมหลัก ──
+  static const Color _pink = Color(0xFFE91E8C);
+  static const Color _lightPink = Color(0xFFFCE4EC);
+  static const Color _softPink = Color(0xFFF8BBD0);
+  static const Color _deepPink = Color(0xFFC2185B);
+
   Future<void> login() async {
     try {
-      // สั่ง Firebase ให้ตรวจสอบ Email/Password
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -32,216 +33,331 @@ class _LoginPageState extends State<LoginPage> {
       final user = FirebaseAuth.instance.currentUser;
       final isAdmin = user?.email == 'admintoilet0012@gmail.com';
 
-      // จุดที่ 1: เช็คว่า User คนนี้ได้ยืนยันอีเมลแล้วหรือยัง
-      // โดยมีเงื่อนไข "ยกเว้น" ถ้าเป็นอีเมลของแอดมิน (isAdmin == true)
       if (user?.emailVerified == false && !isAdmin) {
-
-        // ถ้ายังไม่ยืนยัน และไม่ใช่แอดมิน ให้เตะผู้ใช้ออกจากระบบ (Sign Out) ทันที
         await FirebaseAuth.instance.signOut();
 
         // Best Practice: เช็คว่า Widget ยังอยู่บนหน้าจอก่อนจะใช้ BuildContext
         if (!mounted) return;
 
-        // โชว์ข้อความแจ้งเตือนให้ไปเช็คอีเมล
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("กรุณายืนยันอีเมลของคุณก่อนเข้าใช้งาน")),
+        // เปลี่ยนจาก SnackBar เป็น Dialog เพื่อให้ผู้ใช้เห็นชัดเจนขึ้น
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            title: const Text(
+              "🔒 ยืนยันอีเมล",
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: _deepPink,
+                fontSize: 18,
+              ),
+            ),
+            content: Text(
+              "กรุณายืนยันอีเมลของคุณก่อนเข้าใช้งานค่ะ\n(ตรวจสอบในกล่องจดหมายหรือจดหมายขยะ(Spam))",
+              style: TextStyle(color: Colors.grey[700], height: 1.5),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("ตกลง",
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
         );
-
-        // สั่ง Halt (หยุด) การทำงานของฟังก์ชันนี้ทันที เพื่อไม่ให้แอพเปิดไปหน้า Home
         return;
       }
-
     } on FirebaseAuthException catch (e) {
-      // จัดการกรณีรหัสผิด หรือหา User ไม่เจอ
       String message = "เกิดข้อผิดพลาด";
-      if (e.code == 'user-not-found') {
-        message = "ไม่พบอีเมลนี้ในระบบ";
-      } else if (e.code == 'wrong-password') {
-        message = "รหัสผ่านไม่ถูกต้อง";
-      } else if (e.code == 'invalid-credential') {
-        message =
-            "อีเมลหรือรหัสผ่านไม่ถูกต้อง"; // Firebase รุ่นใหม่จะรวม Error เป็นตัวนี้
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text(message)),
-      );
+      if (e.code == 'user-not-found') message = "ไม่พบอีเมลนี้ในระบบ";
+      else if (e.code == 'wrong-password') message = "รหัสผ่านไม่ถูกต้อง";
+      else if (e.code == 'invalid-credential') message = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+      _showSnackBar(message, isError: true);
     }
   }
 
- // ฟังก์ชันเข้าใช้งานแบบ Guest
-  void loginAsGuest() {
-    // นำทาง (Route) ข้ามไปหน้าหลักทันทีโดยไม่ผ่าน Firebase
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
-    );
+  void _showSnackBar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: isError ? _deepPink : _pink,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      content: Text(msg, style: const TextStyle(color: Colors.white)),
+    ));
   }
 
-  // ฟังก์ชัน Login ด้วย Google
+  void loginAsGuest() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const HomePage()));
+  }
+
   Future<void> signInWithGoogle() async {
     try {
-      // 1. สั่งให้เปิดหน้าต่างเลือกบัญชี Google
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      // ถ้าผู้ใช้กดปิดหน้าต่างไปเอง (ไม่ยอมล็อกอิน) ให้หยุดการทำงานทันที
       if (googleUser == null) return;
-
-      // 2. ขอข้อมูลยืนยันตัวตน (Authentication) จากบัญชีที่เลือก
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // 3. สร้างบัตรผ่าน (Credential) ด้วยข้อมูลจาก Google
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-
-      // 4. เอาบัตรผ่านไปยื่นล็อกอินเข้า Firebase
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      // ถ้ามี Error อะไรเกิดขึ้น ให้แสดงผลออกมาดู
-      // ถ้ามี Error อะไรเกิดขึ้น ให้แสดงเป็น SnackBar ให้ผู้ใช้เห็น
-      print("เกิดข้อผิดพลาดในการล็อกอินด้วย Google: $e");
-      if (mounted) {
-        // ตรวจสอบว่า Widget ยังอยู่บนหน้าจอก่อนแสดง SnackBar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red,
-            content: Text("การล็อกอินด้วย Google ล้มเหลว: ${e.toString()}"),
-          ),
-        );
-      }
+      if (mounted) _showSnackBar("การล็อกอินด้วย Google ล้มเหลว", isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wc, size: 100, color: Colors.brown),
-            SizedBox(height: 20),
-            Text(
-              "เข้าสู่ระบบ Hong Nam",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 40),
-
-            // ช่อง Email
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: "อีเมล",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-            ),
-            SizedBox(height: 20),
-
-            // ช่อง Password
-            TextField(
-              controller: _passwordController,
-              // 1. เปลี่ยนจาก true ตายตัว ให้มาใช้ค่าจากตัวแปรแทน
-              obscureText: _isObscure, 
-              decoration: InputDecoration(
-                labelText: "รหัสผ่าน",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-                
-                // 2. เพิ่มส่วน suffixIcon (ไอคอนต่อท้าย) ตรงนี้
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    // ตรรกะ: ถ้า _isObscure เป็น true ให้โชว์ลูกตาปิด (visibility_off) 
-                    // แต่ถ้าเป็น false ให้โชว์ลูกตาเปิด (visibility)
-                    _isObscure ? Icons.visibility_off : Icons.visibility 
-                  ),
-                  onPressed: () {
-                    // 3. ใช้ setState เพื่อสั่งให้หน้าจอกะพริบวาดใหม่
-                    setState(() {
-                      // สลับค่าตัวแปร: เครื่องหมาย ! แปลว่า "ตรงข้าม"
-                      _isObscure = !_isObscure; 
-                    });
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 30),
-
-            // ปุ่ม Login
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: login, // เรียกฟังก์ชัน login
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text("เข้าสู่ระบบ", style: TextStyle(fontSize: 18)),
-              ),
-            ),
-
-            SizedBox(height: 20),
-
-            // ปุ่ม Login ด้วย Google
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: signInWithGoogle,
-                // ใช้ Image.asset เพื่อแสดงโลโก้จากไฟล์
-                icon: Image.asset(
-                  'assets/icons/Logo-google-icon-PNG.png',
-                  height: 24.0,
-                  width: 24.0, // <-- เพิ่มการจำกัดความกว้างตรงนี้
-                  fit: BoxFit.contain, // <-- (แถม) ตัวนี้จะช่วยบังคับให้รูปย่อส่วนลงมาอยู่ในกรอบ 24x24 แบบพอดีเป๊ะ ไม่โดนตัดขอบครับ
-                ),
-                label: const Text(
-                  "เข้าสู่ระบบด้วย Google",
-                  style: TextStyle(color: Colors.black87, fontSize: 18),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 20),
-
-            // โซนกดไปหน้าสมัครสมาชิก
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFFF0F5), Color(0xFFFCE4EC), Color(0xFFF8BBD0)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: Column(
               children: [
-                Text("ยังไม่มีบัญชีใช่ไหม?"),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
+                const SizedBox(height: 30),
+
+                // ── โลโก้ ──
+                Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [_pink, _deepPink],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _pink.withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
-                    );
-                  },
+                    ],
+                  ),
+                  child: const Icon(Icons.wc, size: 60, color: Colors.white),
+                ),
+
+                const SizedBox(height: 28),
+
+                // ── ชื่อแอป ──
+                const Text(
+                  "Hong Nam",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFC2185B),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "ค้นหาห้องน้ำใกล้บ้านคุณได้เลย",
+                  style: TextStyle(fontSize: 14, color: Colors.pink[300]),
+                ),
+
+                const SizedBox(height: 40),
+
+                // ── การ์ด ──
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _softPink.withOpacity(0.6),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "เข้าสู่ระบบ",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFC2185B),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ช่อง Email
+                      _buildTextField(
+                        controller: _emailController,
+                        label: "อีเมล",
+                        icon: Icons.email_rounded,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ช่อง Password
+                      _buildTextField(
+                        controller: _passwordController,
+                        label: "รหัสผ่าน",
+                        icon: Icons.lock_rounded,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 28),
+
+                      // ปุ่ม Login
+                      _buildPrimaryButton("เข้าสู่ระบบ", login),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── ปุ่ม Google ──
+                _buildGoogleButton(),
+
+                const SizedBox(height: 20),
+
+                // ── ลิงก์สมัคร ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("ยังไม่มีบัญชีใช่ไหม?",
+                        style: TextStyle(color: Colors.pink[400])),
+                    TextButton(
+                      onPressed: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const RegisterPage())),
+                      child: const Text(
+                        "สมัครสมาชิก",
+                        style: TextStyle(
+                          color: _deepPink,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // ── Guest ──
+                TextButton(
+                  onPressed: loginAsGuest,
                   child: Text(
-                    "สมัครสมาชิกที่นี่",
-                    style: TextStyle(color: Colors.brown),
+                    "เข้าใช้งานแบบ Guest (ผู้เยี่ยมชม)",
+                    style: TextStyle(
+                      color: Colors.pink[300],
+                      decoration: TextDecoration.underline,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            TextButton(
-              onPressed: loginAsGuest, // เรียกฟังก์ชัน Guest
-              child: Text(
-                "เข้าใช้งานแบบ Guest (ผู้เยี่ยมชม)",
-                style: TextStyle(
-                  color: Colors.grey,
-                  decoration: TextDecoration.underline,
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword ? _isObscure : false,
+      style: const TextStyle(color: Color(0xFF4A0020)),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.pink[300]),
+        prefixIcon: Icon(icon, color: _pink),
+        filled: true,
+        fillColor: _lightPink.withOpacity(0.4),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: _softPink, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _pink, width: 2),
+        ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isObscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  color: Colors.pink[300],
                 ),
-              ),
+                onPressed: () => setState(() => _isObscure = !_isObscure),
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(String label, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_pink, _deepPink],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _pink.withOpacity(0.45),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
             ),
           ],
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Text(label,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton.icon(
+        onPressed: signInWithGoogle,
+        icon: Image.asset(
+          'assets/icons/Logo-google-icon-PNG.png',
+          height: 22,
+          width: 22,
+          fit: BoxFit.contain,
+        ),
+        label: const Text(
+          "เข้าสู่ระบบด้วย Google",
+          style: TextStyle(
+            color: Color(0xFF4A4A4A),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: _softPink, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white.withOpacity(0.85),
         ),
       ),
     );
