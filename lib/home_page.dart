@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage> {
     // จัดเตรียมข้อมูลเรื่องดาว
     final currentUser = FirebaseAuth.instance.currentUser;
     final String myUid = currentUser?.uid ?? 'anonymous';
-    final bool isGuest = currentUser?.isAnonymous ?? false;
+    final bool isGuest = FirebaseAuth.instance.currentUser == null;
 
     // ดึงกล่องคะแนนมา (ถ้าไม่มีให้สร้างกล่องเปล่า)
     Map<String, dynamic> ratings = data['ratings'] != null 
@@ -782,15 +782,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
+  void logout(BuildContext context) {
+    final isGuest = FirebaseAuth.instance.currentUser == null;
+
+    if (isGuest) {
+      // สำหรับ Guest, การ "Log out" คือการย้อนกลับไปหน้า Login
+      Navigator.of(context).pop();
+    } else {
+      // สำหรับสมาชิก, ให้ทำการ Sign Out ออกจาก Firebase ตามปกติ
+      // ตัวจัดการสถานะ authStateChanges จะนำทางกลับไปหน้า Login เอง
+      FirebaseAuth.instance.signOut();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final isAdmin = user?.email == 'admintoilet0012@gmail.com';
-    final isGuest = user?.isAnonymous ?? false;
+    final isGuest = user == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -798,7 +807,7 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Hero Map", style: TextStyle(fontSize: 18)),
-            Text(user?.displayName ?? "Anonymous Hero", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300)),
+            Text(user?.displayName ?? "Anonymous", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300)),
           ],
         ),
         backgroundColor: Colors.brown,
@@ -815,7 +824,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.admin_panel_settings, color: Colors.amber), // ไอคอนโล่สีทอง
             ),
             
-            IconButton(onPressed: () => logout(context), icon: Icon(Icons.logout))
+            IconButton(onPressed: () => logout(context), icon: const Icon(Icons.logout))
             ],
           ),
       body: Stack(

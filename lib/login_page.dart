@@ -29,9 +29,14 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
+      final user = FirebaseAuth.instance.currentUser;
+      final isAdmin = user?.email == 'admintoilet0012@gmail.com';
+
       // จุดที่ 1: เช็คว่า User คนนี้ได้ยืนยันอีเมลแล้วหรือยัง
-      if (FirebaseAuth.instance.currentUser?.emailVerified == false) {
-        // จุดที่ 2: ถ้ายังไม่ยืนยัน ให้เตะผู้ใช้ออกจากระบบ (Sign Out) ทันที
+      // โดยมีเงื่อนไข "ยกเว้น" ถ้าเป็นอีเมลของแอดมิน (isAdmin == true)
+      if (user?.emailVerified == false && !isAdmin) {
+
+        // ถ้ายังไม่ยืนยัน และไม่ใช่แอดมิน ให้เตะผู้ใช้ออกจากระบบ (Sign Out) ทันที
         await FirebaseAuth.instance.signOut();
 
         // Best Practice: เช็คว่า Widget ยังอยู่บนหน้าจอก่อนจะใช้ BuildContext
@@ -42,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text("กรุณายืนยันอีเมลของคุณก่อนเข้าใช้งาน")),
         );
 
-        // จุดที่ 3: สั่ง Halt (หยุด) การทำงานของฟังก์ชันนี้ทันที เพื่อไม่ให้แอพเปิดไปหน้า Home
+        // สั่ง Halt (หยุด) การทำงานของฟังก์ชันนี้ทันที เพื่อไม่ให้แอพเปิดไปหน้า Home
         return;
       }
 
@@ -64,19 +69,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> loginAsGuest() async {
-    try {
-      // สั่ง Firebase ให้สร้างไอดีชั่วคราวให้
-      await FirebaseAuth.instance.signInAnonymously();
-      // พอล็อกอินเสร็จ StreamBuilder ใน main.dart จะพาไปหน้า Home เอง
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text("เข้าสู่ระบบ Guest ล้มเหลว"),
-        ),
-      );
-    }
+ // ฟังก์ชันเข้าใช้งานแบบ Guest
+  void loginAsGuest() {
+    // นำทาง (Route) ข้ามไปหน้าหลักทันทีโดยไม่ผ่าน Firebase
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
   }
 
   // ฟังก์ชัน Login ด้วย Google
@@ -127,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
             Icon(Icons.wc, size: 100, color: Colors.brown),
             SizedBox(height: 20),
             Text(
-              "เข้าสู่ระบบ Hero",
+              "เข้าสู่ระบบ Hong Nam",
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 40),
