@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'admin_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ── สีธีมหลัก (ใช้งานทั้งไฟล์) ──
 const Color _pink = Color(0xFFE91E8C);
@@ -71,6 +72,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+
   Future<void> _searchPlace() async {
     String query = _searchController.text.trim();
     if (query.isEmpty) return;
@@ -87,6 +89,24 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       _showSnackBar("หาสถานที่ไม่เจอ ลองพิมพ์ให้ชัดเจนขึ้นนะคะ", isError: true);
+    }
+  }
+
+  // ฟังก์ชันเปิดแอป Google Maps เพื่อนำทาง
+  Future<void> _navigateToToilet(double lat, double lng) async {
+    // 1. สร้างลิงก์คำสั่ง (URI) โดยแนบพิกัดละติจูดและลองจิจูดไปที่ปลายทาง (destination)
+    final Uri googleMapsUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+
+    // 2. เช็คว่ามือถือเครื่องนี้สามารถเปิดลิงก์นี้ได้ไหม? (มีแอปหรือเบราว์เซอร์รองรับไหม)
+    if (await canLaunchUrl(googleMapsUrl)) {
+      // ถ้าเปิดได้ ให้ทำการ Launch เลย โดยบังคับให้เปิดเป็นแอปภายนอก
+      await launchUrl(
+        googleMapsUrl,
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      // 3. ถ้าเปิดไม่ได้ (เช่น ไม่มีแอป) ให้โชว์แจ้งเตือน
+      _showSnackBar("ไม่สามารถเปิดระบบนำทางได้ครับ", isError: true);
     }
   }
 
@@ -355,17 +375,30 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
 
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Icon(Icons.person_rounded, size: 14, color: Colors.grey[400]),
-                        const SizedBox(width: 5),
-                        Text(
-                          "ปักหมุดโดย: ${data['authorName'] ?? 'Anonymous Hero'}",
-                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                        ),
-                      ],
+
+                  // --- ปุ่มนำทาง ---
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.directions_rounded, color: Colors.white, size: 24),
+                      label: const Text("นำทางไปห้องน้ำนี้", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent, // ใช้สีฟ้าให้สื่อถึงแผนที่และการเดินทาง
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        // ปิดหน้าต่าง Popup ก่อนเพื่อความสวยงาม
+                        Navigator.pop(context); 
+                        
+                        // เรียกใช้งานฟังก์ชันนำทาง พร้อมส่งพิกัดของหมุดนี้ไปให้
+                        _navigateToToilet(data['latitude'], data['longitude']);
+                      },
                     ),
+                  ),
+                  // ------------------
 
                     // ── ปุ่มรายงาน ──
                     const SizedBox(height: 16),
@@ -400,6 +433,18 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                     ),
+
+                    Row(
+                      children: [
+                        Icon(Icons.person_rounded, size: 14, color: Colors.grey[400]),
+                        const SizedBox(width: 5),
+                        Text(
+                          "ปักหมุดโดย: ${data['authorName'] ?? 'Anonymous Hero'}",
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        ),
+                      ],
+                    ),
+
                   ],
                 ),
               ),
