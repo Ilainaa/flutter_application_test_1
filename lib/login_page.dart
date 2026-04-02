@@ -34,6 +34,17 @@ class _LoginPageState extends State<LoginPage> {
       final isAdmin = user?.email == 'admintoilet0012@gmail.com';
 
       if (user?.emailVerified == false && !isAdmin) {
+        
+        // ----------------------------------------------------
+        // แทรกโค้ดตรงนี้: สั่งส่งลิงก์ใหม่ก่อนที่จะเตะออก
+        try {
+          await user?.sendEmailVerification();
+        } catch (e) {
+          print("ไม่สามารถส่งอีเมลซ้ำได้: $e");
+        }
+        // ----------------------------------------------------
+
+        // เตะออกจากระบบ
         await FirebaseAuth.instance.signOut();
 
         // Best Practice: เช็คว่า Widget ยังอยู่บนหน้าจอก่อนจะใช้ BuildContext
@@ -49,18 +60,19 @@ class _LoginPageState extends State<LoginPage> {
               "🔒 ยืนยันอีเมล",
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: _deepPink,
+                color: Colors.pink, // หรือใช้ _deepPink ตามที่คุณกำหนดไว้
                 fontSize: 18,
               ),
             ),
             content: Text(
-              "กรุณายืนยันอีเมลของคุณก่อนเข้าใช้งานค่ะ\n(ตรวจสอบในกล่องจดหมายหรือจดหมายขยะ(Spam))",
+              // ปรับข้อความเพื่อบอกว่าเราเพิ่งส่งลิงก์ใหม่ไปให้
+              "ลิงก์เก่าอาจหมดอายุ เราได้ส่งลิงก์ยืนยันไปใหม่อีกรอบแล้ว!\n\nกรุณายืนยันอีเมลของคุณก่อนเข้าใช้งานค่ะ\nตรวจสอบลิงก์ยืนยันในกล่องจดหมายขยะ (Spam) ",
               style: TextStyle(color: Colors.grey[700], height: 1.5),
             ),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("ตกลง",
+                child: const Text("ตกลงเข้าใจแล้ว",
                     style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ],
@@ -68,12 +80,17 @@ class _LoginPageState extends State<LoginPage> {
         );
         return;
       }
+      
+      // ... ถ้าผ่านด่าน if ด้านบนมาได้ แปลว่ายืนยันอีเมลแล้ว ให้เขียนโค้ดพาไปหน้า Home ต่อได้เลย ...
+
     } on FirebaseAuthException catch (e) {
-      String message = "เกิดข้อผิดพลาด";
+      String message = "เกิดข้อผิดพลาด กรุณา login";
       if (e.code == 'user-not-found') message = "ไม่พบอีเมลนี้ในระบบ";
       else if (e.code == 'wrong-password') message = "รหัสผ่านไม่ถูกต้อง";
       else if (e.code == 'invalid-credential') message = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
-      _showSnackBar(message, isError: true);
+      
+      // สมมติว่าคุณมีฟังก์ชัน _showSnackBar เตรียมไว้แล้ว
+      // _showSnackBar(message, isError: true); 
     }
   }
 
@@ -101,7 +118,15 @@ class _LoginPageState extends State<LoginPage> {
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      if (mounted) _showSnackBar("การล็อกอินด้วย Google ล้มเหลว", isError: true);
+      // โชว์ข้อความ Error ของจริงออกมาบนหน้าจอเลย!
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Google Error: ${e.toString()}"),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.red,
+        ),
+      );
+      print("Google Error: $e");
     }
   }
 

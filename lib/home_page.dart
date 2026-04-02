@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'admin_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'login_page.dart'; // เพิ่มบรรทัดนี้เพื่อรู้จักหน้า Login
 
 // ── สีธีมหลัก (ใช้งานทั้งไฟล์) ──
 const Color _pink = Color(0xFFE91E8C);
@@ -1109,13 +1111,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void logout(BuildContext context) {
+// ต้องเติม async ด้วยเพราะเราจะใช้คำสั่ง await
+  void logout(BuildContext context) async {
     final isGuest = FirebaseAuth.instance.currentUser == null;
-    if (isGuest) {
-      Navigator.of(context).pop();
-    } else {
-      FirebaseAuth.instance.signOut();
+    
+    if (!isGuest) {
+      // ถ้าเป็นสมาชิก ให้เคลียร์ความจำ Google และออกจากระบบ Firebase
+      await GoogleSignIn().signOut();
+      await FirebaseAuth.instance.signOut();
     }
+
+    // Best Practice: เช็คว่า Widget ยังอยู่ก่อนทำคำสั่งเปลี่ยนหน้า
+    if (!context.mounted) return;
+
+    // --- แก้ไขจุดจอดำตรงนี้ ---
+    // ใช้ pushAndRemoveUntil เพื่อเปิดหน้า Login แล้วล้างหน้าเก่า(ที่ทำให้จอดำ)ทิ้งทั้งหมด
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false, // false หมายถึง "ล้างประวัติหน้าจอที่ซ้อนกันอยู่ทิ้งให้หมดเกลี้ยง"
+    );
   }
 
   @override
