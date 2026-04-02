@@ -78,10 +78,18 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
         );
-        return;
+        return; // สั่งหยุดทำงาน ไม่ให้มันไหลลงไปบรรทัดข้างล่าง
       }
       
-      // ... ถ้าผ่านด่าน if ด้านบนมาได้ แปลว่ายืนยันอีเมลแล้ว ให้เขียนโค้ดพาไปหน้า Home ต่อได้เลย ...
+      // 🚨 --- เพิ่มโค้ดส่วนนี้เพื่อพาเข้าหน้า Home --- 🚨
+      if (!mounted) return;
+
+      // ถ้าผ่านด่านด้านบนมาได้ (คือเป็น Admin หรือยืนยันอีเมลแล้ว) ให้พาวาร์ปเข้าหน้า Home!
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+      // -------------------------------------------------
 
     } on FirebaseAuthException catch (e) {
       String message = "เกิดข้อผิดพลาด กรุณา login";
@@ -89,8 +97,14 @@ class _LoginPageState extends State<LoginPage> {
       else if (e.code == 'wrong-password') message = "รหัสผ่านไม่ถูกต้อง";
       else if (e.code == 'invalid-credential') message = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
       
-      // สมมติว่าคุณมีฟังก์ชัน _showSnackBar เตรียมไว้แล้ว
-      // _showSnackBar(message, isError: true); 
+      if (!mounted) return;
+      // โชว์ SnackBar แจ้งเตือน Error
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+      ));
     }
   }
 
@@ -109,16 +123,31 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> signInWithGoogle() async {
     try {
+      await GoogleSignIn().signOut();
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
+      
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      
+      // ล็อกอินเข้า Firebase สำเร็จ
       await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // --- 🚨 สิ่งที่ต้องเพิ่มเข้าไปคือส่วนนี้ครับ 🚨 ---
+      // เช็คว่าหน้าจอยังเปิดอยู่ไหม (Best Practice)
+      if (!mounted) return; 
+
+      // สั่งให้เปลี่ยนหน้าไปที่ HomePage และลบหน้า Login ทิ้งไปเลยไม่ให้กด Back กลับมาได้
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+      // ----------------------------------------------
+
     } catch (e) {
-      // โชว์ข้อความ Error ของจริงออกมาบนหน้าจอเลย!
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Google Error: ${e.toString()}"),

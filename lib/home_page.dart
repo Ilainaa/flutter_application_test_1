@@ -12,6 +12,7 @@ import 'admin_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'login_page.dart'; // เพิ่มบรรทัดนี้เพื่อรู้จักหน้า Login
+import 'tutorial_dialog.dart'; // เพิ่มบรรทัดนี้
 
 // ── สีธีมหลัก (ใช้งานทั้งไฟล์) ──
 const Color _pink = Color(0xFFE91E8C);
@@ -49,6 +50,10 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _determinePosition();
     _listenToApprovedToilets();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showTutorialIfNeeded(context);
+  });
   }
 
   Future<void> _determinePosition() async {
