@@ -395,7 +395,7 @@ class _LoginPageState extends State<LoginPage> {
       child: OutlinedButton.icon(
         onPressed: signInWithGoogle,
         icon: Image.asset(
-          'assets/icons/Logo-google-icon-PNG.png',
+          'assets/icons/google-icon.png',
           height: 22,
           width: 22,
           fit: BoxFit.contain,

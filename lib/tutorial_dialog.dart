@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ── สีธีมหลัก (ตรงกับ home_page.dart) ──
 const Color _pink = Color(0xFFE91E8C);
@@ -86,12 +87,21 @@ const List<_TutorialStep> _steps = [
   ),
 ];
 
-/// เรียกใช้ฟังก์ชันนี้ใน initState ของ HomePage
+
 /// จะแสดง Dialog เฉพาะครั้งแรกที่ผู้ใช้เปิดแอป
+/// เรียกใช้ฟังก์ชันนี้ใน initState ของ HomePage
 Future<void> showTutorialIfNeeded(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
-  final bool alreadySeen = prefs.getBool(_kTutorialSeen) ?? false;
-  if (alreadySeen) return;
+  
+  // 1. ดึง UID ของผู้ใช้ปัจจุบัน (ถ้าเป็น Guest จะใช้คำว่า 'guest')
+  final user = FirebaseAuth.instance.currentUser;
+  final String uid = user?.uid ?? 'guest';
+  
+  // 2. เอา UID มาต่อท้าย Key เพื่อให้จำแยกกันแต่ละบัญชี!
+  final String prefsKey = '${_kTutorialSeen}_$uid';
+
+  final bool alreadySeen = prefs.getBool(prefsKey) ?? false; 
+  if (alreadySeen) return; 
 
   // รอให้ Widget build เสร็จก่อน
   await Future.delayed(Duration.zero);
@@ -101,13 +111,16 @@ Future<void> showTutorialIfNeeded(BuildContext context) async {
   await showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => const _TutorialDialog(),
+    // ส่ง Key เฉพาะตัวของคนนั้นเข้าไปให้ Dialog ใช้
+    builder: (ctx) => _TutorialDialog(prefsKey: prefsKey), 
   );
 }
 
 // ── Widget Dialog หลัก ──
 class _TutorialDialog extends StatefulWidget {
-  const _TutorialDialog();
+  final String prefsKey; // เพิ่มตัวแปรรับ Key
+  
+  const _TutorialDialog({super.key, required this.prefsKey});
 
   @override
   State<_TutorialDialog> createState() => _TutorialDialogState();
@@ -119,7 +132,8 @@ class _TutorialDialogState extends State<_TutorialDialog> {
 
   Future<void> _markSeenAndClose() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kTutorialSeen, true);
+    // 3. บันทึกความจำลงใน Key เฉพาะของคนคนนั้น
+    await prefs.setBool(widget.prefsKey, true); 
     if (mounted) Navigator.of(context).pop();
   }
 

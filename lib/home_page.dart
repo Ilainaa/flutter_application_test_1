@@ -129,23 +129,36 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _listenToApprovedToilets() {
-    FirebaseFirestore.instance
-        .collection('toilets')
-        .where('status', isEqualTo: 'approved')
-        .snapshots()
-        .listen((snapshot) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isAdmin = user?.email == 'admintoilet0012@gmail.com';
+
+    // 1. สร้างคำสั่งดึงข้อมูล
+    Query query = FirebaseFirestore.instance.collection('toilets');
+    
+    // ถ้า "ไม่ใช่" แอดมิน ให้ดึงมาโชว์เฉพาะที่อนุมัติแล้ว (approved)
+    // แต่ถ้าเป็นแอดมิน มันจะไม่เข้า if นี้ และดึงมาทั้งหมด (รวม pending ด้วย)
+    if (!isAdmin) {
+      query = query.where('status', isEqualTo: 'approved');
+    }
+
+    query.snapshots().listen((snapshot) {
       Set<Marker> newMarkers = {};
       for (var doc in snapshot.docs) {
-        var data = doc.data();
+        var data = doc.data() as Map<String, dynamic>;
         LatLng position = LatLng(data['latitude'], data['longitude']);
 
+        String status = data['status'] ?? 'pending';
         bool isFree = data['isFree'] ?? true;
         bool isBroken = data['isBroken'] ?? false;
 
         String titleText;
         double pinColor;
 
-        if (isBroken) {
+        // 2. แยกสีหมุดตามสถานะ (เพิ่มสีฟ้าสำหรับแอดมิน)
+        if (status == 'pending') {
+          titleText = '⏳ รอตรวจสอบ (Pending)';
+          pinColor = BitmapDescriptor.hueCyan; // สีฟ้าจางๆ ตามรีเควส!
+        } else if (isBroken) {
           titleText = '❌ ชำรุด / ปิดซ่อมแซม';
           pinColor = BitmapDescriptor.hueRed;
         } else if (isFree) {
@@ -163,10 +176,14 @@ class _HomePageState extends State<HomePage> {
           icon: BitmapDescriptor.defaultMarkerWithHue(pinColor),
         ));
       }
-      setState(() {
-        _markers.clear();
-        _markers.addAll(newMarkers);
-      });
+      
+      // อัปเดตหน้าจอ
+      if (mounted) {
+        setState(() {
+          _markers.clear();
+          _markers.addAll(newMarkers);
+        });
+      }
     });
   }
 
@@ -667,11 +684,7 @@ class _HomePageState extends State<HomePage> {
                   controller: _nameController,
                   label: "ชื่อของคุณ",
                   icon: Icons.person_rounded),
-              const SizedBox(height: 14),
-              _dialogTextField(
-                  controller: _descController,
-                  label: "คำอธิบาย",
-                  icon: Icons.description_rounded),
+              const SizedBox(height: 14)
             ],
           ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

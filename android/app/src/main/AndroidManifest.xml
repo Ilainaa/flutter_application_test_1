@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="flutter_application_test_1"
+        android:label="Hong Nam"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
