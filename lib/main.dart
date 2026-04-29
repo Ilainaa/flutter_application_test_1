@@ -50,7 +50,28 @@ class MyApp extends StatelessWidget {
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          if (snapshot.hasData) return const HomePage();
+          // ระหว่างรอโหลด ให้โชว์หน้าว่างๆ ไปก่อน
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          // ถ้ามีข้อมูลผู้ใช้ล็อกอินเข้ามา
+          if (snapshot.hasData) {
+            final user = snapshot.data!;
+            final isAdmin = user.email == 'admintoilet0012@gmail.com';
+
+            // 🚨 ด่านตรวจความปลอดภัย: ต้องยืนยันอีเมลแล้ว หรือเป็น Admin เท่านั้นถึงจะเข้าได้
+            if (user.emailVerified || isAdmin) {
+              return const HomePage();
+            } else {
+              // ถ้าล็อกอินสำเร็จ แต่ "ยังไม่ยืนยันอีเมล" ให้บล็อกไว้หน้า Login เหมือนเดิม (แก้บั๊กจอกะพริบ)
+              return const LoginPage();
+            }
+          }
+
+          // ถ้าไม่มีข้อมูล (ยังไม่ล็อกอิน) หรือกด Logout ออกมา
           return const LoginPage();
         },
       ),

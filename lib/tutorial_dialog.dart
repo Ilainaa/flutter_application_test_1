@@ -132,7 +132,7 @@ class _TutorialDialogState extends State<_TutorialDialog> {
 
   Future<void> _markSeenAndClose() async {
     final prefs = await SharedPreferences.getInstance();
-    // 3. บันทึกความจำลงใน Key เฉพาะของคนคนนั้น
+    // บันทึกความจำลงใน Key เฉพาะของคนคนนั้น
     await prefs.setBool(widget.prefsKey, true); 
     if (mounted) Navigator.of(context).pop();
   }

@@ -50,7 +50,6 @@ class _LoginPageState extends State<LoginPage> {
         // Best Practice: เช็คว่า Widget ยังอยู่บนหน้าจอก่อนจะใช้ BuildContext
         if (!mounted) return;
 
-        // เปลี่ยนจาก SnackBar เป็น Dialog เพื่อให้ผู้ใช้เห็นชัดเจนขึ้น
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -66,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             content: Text(
               // ปรับข้อความเพื่อบอกว่าเราเพิ่งส่งลิงก์ใหม่ไปให้
-              "ลิงก์เก่าอาจหมดอายุ เราได้ส่งลิงก์ยืนยันไปใหม่อีกรอบแล้ว!\n\nกรุณายืนยันอีเมลของคุณก่อนเข้าใช้งานค่ะ\nตรวจสอบลิงก์ยืนยันในกล่องจดหมายขยะ (Spam) ",
+              "กรุณายืนยันอีเมลของคุณก่อนเข้าใช้งานค่ะ\nตรวจสอบลิงก์ยืนยันในกล่องจดหมายขยะ (Spam)\n\nหากไม่ยืนยันใน 3 วัน ลิงก์เก่าอาจหมดอายุ เราได้ส่งลิงก์ยืนยันไปใหม่อีกรอบแล้ว!",
               style: TextStyle(color: Colors.grey[700], height: 1.5),
             ),
             actions: [
@@ -85,16 +84,12 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       // ถ้าผ่านด่านด้านบนมาได้ (คือเป็น Admin หรือยืนยันอีเมลแล้ว) ให้พาวาร์ปเข้าหน้า Home!
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => const HomePage()),);
       // -------------------------------------------------
 
     } on FirebaseAuthException catch (e) {
       String message = "เกิดข้อผิดพลาด กรุณา login";
       if (e.code == 'user-not-found') message = "ไม่พบอีเมลนี้ในระบบ";
-      else if (e.code == 'wrong-password') message = "รหัสผ่านไม่ถูกต้อง";
       else if (e.code == 'invalid-credential') message = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
       
       if (!mounted) return;
@@ -141,10 +136,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return; 
 
       // สั่งให้เปลี่ยนหน้าไปที่ HomePage และลบหน้า Login ทิ้งไปเลยไม่ให้กด Back กลับมาได้
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => const HomePage()),);
       // ----------------------------------------------
 
     } catch (e) {
