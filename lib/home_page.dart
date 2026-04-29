@@ -11,8 +11,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'admin_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'login_page.dart'; // เพิ่มบรรทัดนี้เพื่อรู้จักหน้า Login
-import 'tutorial_dialog.dart'; // เพิ่มบรรทัดนี้
+import 'login_page.dart'; 
+import 'tutorial_dialog.dart'; 
 
 // ── สีธีมหลัก (ใช้งานทั้งไฟล์) ──
 const Color _pink = Color(0xFFE91E8C);
@@ -627,6 +627,10 @@ class _HomePageState extends State<HomePage> {
                                   user?.displayName ?? 'Anonymous Hero',
                               'timestamp': FieldValue.serverTimestamp(),
                               'status': 'pending',
+                            });
+
+                            await FirebaseFirestore.instance.collection('toilets').doc(toiletId).update({
+                              'isBroken': true, 
                             });
                             Navigator.pop(context);
                             _showSnackBar("✅ ขอบคุณที่ช่วยรายงานค่ะ แอดมินจะรีบตรวจสอบ!",
