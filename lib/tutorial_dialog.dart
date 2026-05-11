@@ -33,7 +33,7 @@ const List<_TutorialStep> _steps = [
     icon: Icons.wc_rounded,
     iconColor: Colors.white,
     iconBg: _pink,
-    title: "ยินดีต้อนรับสู่ Hong Nam! 🎉",
+    title: "ยินดีต้อนรับสู่ Ton ni! 🎉",
     description:
         "แอปช่วยค้นหาห้องน้ำสาธารณะใกล้คุณได้อย่างง่ายดาย\nมาดูวิธีใช้งานปุ่มต่าง ๆ กันเลยค่ะ",
   ),
@@ -184,7 +184,7 @@ class _TutorialDialogState extends State<_TutorialDialog> {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
-                    "วิธีใช้งาน Hong Nam",
+                    "วิธีใช้งาน Ton ni",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,

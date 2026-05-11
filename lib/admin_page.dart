@@ -53,7 +53,7 @@ class AdminPage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildToiletManager(),
+            _buildPointManager(), // 🚨 เปลี่ยนชื่อฟังก์ชันให้ครอบคลุม
             _buildReportManager(),
           ],
         ),
@@ -61,13 +61,14 @@ class AdminPage extends StatelessWidget {
     );
   }
 
-  // ── แท็บ 1: จัดการหมุด ──
-  Widget _buildToiletManager() {
+  // ── แท็บ 1: จัดการหมุด (เปลี่ยนจาก toilets เป็น points) ──
+  Widget _buildPointManager() {
     return StreamBuilder(
-      stream: FirebaseFirestore.instance.collection('toilets').snapshots(),
+      // 🚨 เปลี่ยน collection เป็น 'points'
+      stream: FirebaseFirestore.instance.collection('points').snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
+          return const Center(
               child: CircularProgressIndicator(color: _pink));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -86,6 +87,7 @@ class AdminPage extends StatelessWidget {
 
             String status = data['status'] ?? 'pending';
             bool isBroken = data['isBroken'] ?? false;
+            String category = data['category'] ?? 'ห้องน้ำ'; // 🚨 ดึงประเภทมาโชว์
 
             Color cardColor;
             String statusLabel;
@@ -164,12 +166,22 @@ class AdminPage extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
+                          // 🚨 เพิ่มการแสดงผลประเภทของหมุด
+                          Text(
+                            "ประเภท: $category",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: _deepPink,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
                           Text(
                             "ผู้ปัก: ${data['authorName'] ?? 'ไม่ทราบ'}",
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
+                                fontSize: 12, color: Colors.grey[700]),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(statusIcon, size: 14, color: statusColor),
@@ -197,7 +209,7 @@ class AdminPage extends StatelessWidget {
                             color: Colors.green,
                             bgColor: const Color(0xFFE8F5E9),
                             onTap: () async => await FirebaseFirestore.instance
-                                .collection('toilets')
+                                .collection('points') // 🚨 เปลี่ยนเป็น points
                                 .doc(doc.id)
                                 .update({'status': 'approved', 'isBroken': false}),
                           ),
@@ -209,7 +221,7 @@ class AdminPage extends StatelessWidget {
                                 ? const Color(0xFFE3F2FD)
                                 : const Color(0xFFFFF3E0),
                             onTap: () async => await FirebaseFirestore.instance
-                                .collection('toilets')
+                                .collection('points') // 🚨 เปลี่ยนเป็น points
                                 .doc(doc.id)
                                 .update({'isBroken': !isBroken}),
                           ),
@@ -219,7 +231,7 @@ class AdminPage extends StatelessWidget {
                           color: _deepPink,
                           bgColor: _lightPink,
                           onTap: () => FirebaseFirestore.instance
-                              .collection('toilets')
+                              .collection('points') // 🚨 เปลี่ยนเป็น points
                               .doc(doc.id)
                               .delete(),
                         ),
@@ -244,7 +256,7 @@ class AdminPage extends StatelessWidget {
           .snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: _pink));
+          return const Center(child: CircularProgressIndicator(color: _pink));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState(
@@ -322,7 +334,8 @@ class AdminPage extends StatelessWidget {
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  "ID: ${data['toiletId'] ?? '-'}",
+                                  // 🚨 เปลี่ยนคำนำหน้าให้สอดคล้องกับทุกหมวดหมู่
+                                  "รหัสหมุด: ${data['toiletId'] ?? '-'}",
                                   style: TextStyle(
                                       fontSize: 11, color: Colors.grey[500]),
                                   overflow: TextOverflow.ellipsis,

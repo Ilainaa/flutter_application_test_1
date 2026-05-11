@@ -195,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 // ── ชื่อแอป ──
                 const Text(
-                  "Hong Nam",
+                  "Ton ni",
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
